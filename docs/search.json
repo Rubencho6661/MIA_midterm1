@@ -1,0 +1,93 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "EVALUACION MIDTERM - Análisis de susceptibilidad a deslizamientos mediante regresión logística",
+    "section": "",
+    "text": "Se importan las librerias desde los paquetes\n\n\nCode\nimport pandas as pd\nimport numpy as np\nimport geopandas as gpd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.pipeline import Pipeline\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc\nfrom sklearn.impute import SimpleImputer\nimport seaborn as sns"
+  },
+  {
+    "objectID": "index.html#importando-librerias",
+    "href": "index.html#importando-librerias",
+    "title": "EVALUACION MIDTERM - Análisis de susceptibilidad a deslizamientos mediante regresión logística",
+    "section": "",
+    "text": "Se importan las librerias desde los paquetes\n\n\nCode\nimport pandas as pd\nimport numpy as np\nimport geopandas as gpd\nimport matplotlib.pyplot as plt\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.pipeline import Pipeline\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc\nfrom sklearn.impute import SimpleImputer\nimport seaborn as sns"
+  },
+  {
+    "objectID": "index.html#qué-se-quiere-modelar",
+    "href": "index.html#qué-se-quiere-modelar",
+    "title": "EVALUACION MIDTERM - Análisis de susceptibilidad a deslizamientos mediante regresión logística",
+    "section": "Qué se quiere modelar?",
+    "text": "Qué se quiere modelar?\nSe modelara la posibilidad de ocurrencia de un deslizamiento en funcion a las caracteristicas morfologicas , geologicas y climaticas en la provincia de imbabura. Para ello se ha construido una base de datos propia que parte desde el la variable dependiente (ocurrencia de un deslizamiento: si ocurre / no ocurre) y varias variables topograficas (pendiente, orientación, uso de suelo, indices morfologicos), climáticos (precipitacion)."
+  },
+  {
+    "objectID": "index.html#carga-y-exploración-inicial-del-dataset.",
+    "href": "index.html#carga-y-exploración-inicial-del-dataset.",
+    "title": "EVALUACION MIDTERM - Análisis de susceptibilidad a deslizamientos mediante regresión logística",
+    "section": "1. Carga y exploración inicial del dataset.",
+    "text": "1. Carga y exploración inicial del dataset.\nSe cargan los datos geoespaciales del archivo .dbf, que proviene de una cobertura de puntos en formato shapefile.La tabla contiene atributos asociados a las localizaciones en las que se analizará la susceptibilidad a deslizamientos.\n\n\nCode\ndf = gpd.read_file(\"desliz_db.dbf\")\n# Ver primeras filas\ndf.head()\n\n\n\n\n\n\n\n\n\nid\ndesliz\ndesliz_occ\nelev1\nslp1\nasp1\nmincurv1\nmaxcurv1\ntri1\nprecobs1\n...\nMAX_TEXTUR\nMIN_PRECOD\nFIRST_PH1\nMIN_PROFUN\nMIN_PEDREG\nMIN_DRENAJ\nMIN_INUNDA\nMIN_CAPAFR\nMIN_EROSIO\ngeometry\n\n\n\n\n0\n567.0\n4.0\n0\n4182\n20.022005\n95.237251\n0.305461\n6.235106\n24.248711\n1249.351074\n...\n96.0\n96.0\n96\n96.0\n96.0\n96.0\n96.0\n96.0\n96.0\nNone\n\n\n1\n5094.0\n4.0\n0\n4176\n19.890425\n90.028275\n0.478023\n6.623067\n31.320919\n1249.351074\n...\n96.0\n96.0\n96\n96.0\n96.0\n96.0\n96.0\n96.0\n96.0\nNone\n\n\n2\n5114.0\n5.0\n0\n4442\n22.213970\n37.469372\n-0.642612\n6.319077\n24.331051\n1277.705688\n...\n96.0\n96.0\n96\n96.0\n96.0\n96.0\n96.0\n96.0\n96.0\nNone\n\n\n3\n1982.0\n1.0\n1\n2531\n1.125581\n300.382629\n0.055037\n3.728595\n3.464102\n1061.009277\n...\n21.0\n3.0\n5.5-6.5\n4.0\n1.0\n2.0\n1.0\n3.0\n1.0\nNone\n\n\n4\n227.0\n3.0\n1\n2208\n7.031796\n224.362350\n0.055228\n2.809405\n4.358899\n813.135376\n...\n21.0\n2.0\n6.6-7.4\n4.0\n1.0\n2.0\n1.0\n4.0\n1.0\nNone\n\n\n\n\n5 rows × 24 columns\n\n\n\nSe identifican las variables con valores faltantes y se visualizan en un gráfico de barras. sto permite decidir si imputar valores o eliminar registros incompletos.\n\n\nCode\n# Porcentaje de valores faltantes por columna\nnan_percent = df.isna().mean() * 100\nnan_percent_sorted = nan_percent.sort_values(ascending=False).round(2)\n\nprint(\"Porcentaje de valores faltantes por columna:\")\nprint(nan_percent_sorted)\n\n# === Visualización opcional con gráfico de barras ===\nnan_percent_sorted[nan_percent_sorted &gt; 0].plot(\n    kind='barh', color='salmon', figsize=(8,5)\n)\nplt.title(\"Porcentaje de valores faltantes por variable\")\nplt.xlabel(\"Porcentaje (%)\")\nplt.ylabel(\"Variable\")\nplt.grid(axis='x', linestyle='--', alpha=0.7)\nplt.show()\n\n\nPorcentaje de valores faltantes por columna:\ngeometry      100.00\nprecobs1        1.20\nCLASIF2         0.80\nCLASS           0.80\ndesliz          0.15\nMAX_TEXTUR      0.05\nMIN_EROSIO      0.05\nMIN_CAPAFR      0.05\nMIN_INUNDA      0.05\nMIN_DRENAJ      0.05\nMIN_PEDREG      0.05\nMIN_PROFUN      0.05\nFIRST_PH1       0.05\nMIN_PRECOD      0.05\nMIN_PENDIE      0.05\nMIN_TEXTUR      0.05\ntri1            0.00\nmaxcurv1        0.00\nmincurv1        0.00\nasp1            0.00\nslp1            0.00\nelev1           0.00\ndesliz_occ      0.00\nid              0.00\ndtype: float64\n\n\n\n\n\n\n\n\n\nLa seleccion de seleccion de variables considera: desliz_occ: variable dependiente (0 = sin deslizamiento, 1 = con deslizamiento) features: variables explicativas derivadas del terreno o clima Se eliminan filas con valores faltantes.\n\n\nCode\n# La tercera columna ('desliz_occ') es la variable dependiente (0 = no, 1 = sí)\ntarget_col = 'desliz_occ'\n\n# Seleccion de variables explicativas numéricas\n# Excluimos id, desliz, CLASIF2 (categórica), FIRST_PH1 (código de tipo), 'mincurv1', 'tri1', 'elev1',\n# Puedes ajustar según tus columnas reales\nfeatures = [\n    'slp1', 'asp1', 'mincurv1', 'precobs1', \n    'CLASS', \n]\n\n# Eliminacion filas con NaN\ndf_clean = df.dropna(subset=features + [target_col])\n\n\n\n\nCode\n# Crear subconjunto de datos\nX = df_clean[features]\ny = df_clean[target_col].astype(int)\n\n# Verificar valores faltantes\nX.info()\nX.describe()\n\n\n&lt;class 'pandas.core.frame.DataFrame'&gt;\nIndex: 8127 entries, 0 to 8230\nData columns (total 5 columns):\n #   Column    Non-Null Count  Dtype  \n---  ------    --------------  -----  \n 0   slp1      8127 non-null   float64\n 1   asp1      8127 non-null   float64\n 2   mincurv1  8127 non-null   float64\n 3   precobs1  8127 non-null   float64\n 4   CLASS     8127 non-null   float64\ndtypes: float64(5)\nmemory usage: 381.0 KB\n\n\n\n\n\n\n\n\n\nslp1\nasp1\nmincurv1\nprecobs1\nCLASS\n\n\n\n\ncount\n8127.000000\n8127.000000\n8127.000000\n8127.000000\n8127.000000\n\n\nmean\n17.643405\n179.408475\n0.031628\n1431.777205\n6.559616\n\n\nstd\n9.731685\n106.421286\n0.549215\n524.563947\n2.601635\n\n\nmin\n0.000000\n0.000003\n-3.604353\n710.076965\n1.000000\n\n\n25%\n10.023978\n86.005890\n-0.215386\n960.355408\n4.000000\n\n\n50%\n16.839712\n174.297424\n0.039135\n1357.765625\n7.000000\n\n\n75%\n24.342342\n277.573380\n0.274934\n1783.895691\n9.000000\n\n\nmax\n61.854080\n360.000000\n3.151550\n3052.468750\n10.000000\n\n\n\n\n\n\n\nLa matriz de correlacion permite identificar colinealidad entre variables explicativas. Valores altos (&gt;0.8 o &lt;−0.8) pueden indicar redundancia entre variables.\n\n\nCode\n# --- Asegurar que solo se usen variables numéricas ---\n# --- Calcular la matriz de correlación ---\ncorr_matrix = X.corr(numeric_only=True)\n\n# --- Mostrar los valores numéricos ---\ncorr_matrix.round(2)\n\n# --- Visualizar la matriz de correlación con seaborn ---\nplt.figure(figsize=(10, 8))\nsns.heatmap(\n    corr_matrix,\n    annot=False,         # mostrar valores dentro de cada celda\n    cmap='coolwarm',    # colores azul-rojo\n    center=0,           # centrar en cero\n    fmt=\".2f\",          # formato decimal\n    square=True,\n    linewidths=0.5\n)\nplt.title(\"Matriz de correlación entre variables explicativas\", fontsize=14)\nplt.tight_layout()\nplt.show()"
+  },
+  {
+    "objectID": "index.html#división-en-conjuntos-de-entrenamiento-y-prueba-train_test_split.",
+    "href": "index.html#división-en-conjuntos-de-entrenamiento-y-prueba-train_test_split.",
+    "title": "EVALUACION MIDTERM - Análisis de susceptibilidad a deslizamientos mediante regresión logística",
+    "section": "2. División en conjuntos de entrenamiento y prueba (train_test_split).",
+    "text": "2. División en conjuntos de entrenamiento y prueba (train_test_split).\nSe dividen los datos: - 70% para entrenar el modelo - 30% para evaluar su desempeño - La opción stratify=y asegura que la proporción de clases (desliz/no desliz) sea similar en ambos conjuntos.\n\n\nCode\nX_train, X_test, y_train, y_test = train_test_split(\n    X, y, test_size=0.3, random_state=42, stratify=y\n)\n\nprint(\"Tamaño del conjunto de entrenamiento:\", X_train.shape)\nprint(\"Tamaño del conjunto de prueba:\", X_test.shape)\n\n\nTamaño del conjunto de entrenamiento: (5688, 5)\nTamaño del conjunto de prueba: (2439, 5)"
+  },
+  {
+    "objectID": "index.html#definición-y-entrenamiento-del-modelo-utilizando-pipeline.",
+    "href": "index.html#definición-y-entrenamiento-del-modelo-utilizando-pipeline.",
+    "title": "EVALUACION MIDTERM - Análisis de susceptibilidad a deslizamientos mediante regresión logística",
+    "section": "3. Definición y entrenamiento del modelo utilizando Pipeline.",
+    "text": "3. Definición y entrenamiento del modelo utilizando Pipeline.\nEtapas del pipeline:\n\nImputer: reemplaza valores faltantes por la media.\nScaler: estandariza las variables (media = 0, desviación = 1).\nRegresión logística: modelo lineal que estima la probabilidad de deslizamiento.\nclass_weight=‘balanced’: ajusta el peso de las clases para evitar sesgo hacia la clase mayoritaria.\n\n\n\nCode\n# Definir pipeline: estandarización + regresión logística\npipe = Pipeline([\n    ('imputer', SimpleImputer(strategy='mean')),  # or 'median'\n    ('scaler', StandardScaler()),\n    ('logreg', LogisticRegression(solver='liblinear', class_weight='balanced',max_iter=1000))\n])\n\n# Entrenar modelo\npipe.fit(X_train, y_train)\n\n\nPipeline(steps=[('imputer', SimpleImputer()), ('scaler', StandardScaler()),\n                ('logreg',\n                 LogisticRegression(class_weight='balanced', max_iter=1000,\n                                    solver='liblinear'))])In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.PipelinePipeline(steps=[('imputer', SimpleImputer()), ('scaler', StandardScaler()),\n                ('logreg',\n                 LogisticRegression(class_weight='balanced', max_iter=1000,\n                                    solver='liblinear'))])SimpleImputerSimpleImputer()StandardScalerStandardScaler()LogisticRegressionLogisticRegression(class_weight='balanced', max_iter=1000, solver='liblinear')"
+  },
+  {
+    "objectID": "index.html#generación-de-predicciones.",
+    "href": "index.html#generación-de-predicciones.",
+    "title": "EVALUACION MIDTERM - Análisis de susceptibilidad a deslizamientos mediante regresión logística",
+    "section": "4. Generación de predicciones.",
+    "text": "4. Generación de predicciones.\n\n\nCode\ny_pred = pipe.predict(X_test)\ny_prob = pipe.predict_proba(X_test)[:, 1]"
+  },
+  {
+    "objectID": "index.html#evaluación-del-modelo-con-métricas-apropiadas.",
+    "href": "index.html#evaluación-del-modelo-con-métricas-apropiadas.",
+    "title": "EVALUACION MIDTERM - Análisis de susceptibilidad a deslizamientos mediante regresión logística",
+    "section": "5. Evaluación del modelo con métricas apropiadas.",
+    "text": "5. Evaluación del modelo con métricas apropiadas.\n\n\nCode\nacc = accuracy_score(y_test, y_pred)\nprec = precision_score(y_test, y_pred)\nrec = recall_score(y_test, y_pred)\nf1 = f1_score(y_test, y_pred)\n\n\nAccuracy de 0.659 indica que se trata de de un odelo que acierta en alrededro el 66 % de las predicciones totales. EL modelo Es un valor moderado, adecuado como punto de partida, pero no indica excelente desempeño dado que los errores (falsos positivos o negativos) aún son frecuentes.\n\n\nCode\nprint(f\"Accuracy:  {acc:.3f}\")\n\n\nAccuracy:  0.659\n\n\nPrecision 0.630 De todas las zonas predichas como susceptibles a deslizamiento, el 63 % realmente presenta evidencia de deslizamientos. Esto significa que existe una proporción moderada de falsas alarmas (falsos positivos).\n\n\nCode\nprint(f\"Precision: {prec:.3f}\")\n\n\nPrecision: 0.630\n\n\nRecall (Sensibilidad) 0.653 El modelo logra identificar correctamente el 65 % de las áreas donde realmente ocurrieron deslizamientos. Es decir, falla en detectar alrededor del 35 % de los casos reales, lo que puede ser relevante si el objetivo es prevenir riesgos.\n\n\nCode\nprint(f\"Recall:    {rec:.3f}\")\n\n\nRecall:    0.653\n\n\nF1 Score 0.641 Representa el balance entre precisión y sensibilidad. Un valor de 0.64 sugiere que el modelo tiene un rendimiento equilibrado, pero todavía no óptimo para aplicaciones críticas de gestión del riesgo.\n\n\nCode\nprint(f\"F1-score: {f1:.3f}\")\n\n\nF1-score: 0.641"
+  },
+  {
+    "objectID": "index.html#visualizaciones-e-interpretación-de-resultados.",
+    "href": "index.html#visualizaciones-e-interpretación-de-resultados.",
+    "title": "EVALUACION MIDTERM - Análisis de susceptibilidad a deslizamientos mediante regresión logística",
+    "section": "6. Visualizaciones e interpretación de resultados.",
+    "text": "6. Visualizaciones e interpretación de resultados.\nEn la matriz de comfusion Diagonal principal → predicciones correctas. Fuera de la diagonal → errores del modelo.\n\n\nCode\n# Matriz de confusion\ncm = confusion_matrix(y_test, y_pred)\ndisp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[\"No desliz.\", \"Desliz.\"])\ndisp.plot(cmap='Blues')\nplt.title(\"Matriz de confusión\")\nplt.show()\n\n\n\n\n\n\n\n\n\n\n\nCode\n# Curva ROC\nfpr, tpr, thresholds = roc_curve(y_test, y_prob)\nroc_auc = auc(fpr, tpr)\n\nplt.figure(figsize=(6,6))\nplt.plot(fpr, tpr, label=f'ROC (AUC = {roc_auc:.2f})', color='darkorange')\nplt.plot([0,1], [0,1], linestyle='--', color='gray')\nplt.xlabel(\"False Positive Rate\")\nplt.ylabel(\"True Positive Rate\")\nplt.title(\"Curva ROC\")\nplt.legend()\nplt.grid(True)\nplt.show()\n\n\n\n\n\n\n\n\n\nLa curva ROC representa la capacidad del modelo para distinguir entre áreas con y sin deslizamientos. En el eje X se muestra la tasa de “falsos positivos” y en el eje Y la tasa de “verdaderos positivos”. El valor del area cajo la curva (AUC) es 0.73, lo que implica:\n🔹 Si se eligen al azar dos zonas, una con deslizamiento y otra sin deslizamiento, el modelo tiene un 73 % de probabilidad de asignar coincidor con la ocurrencia de un deslizamiento a la zona realmente afectada.\n🔹 Un AUC = 0.73 demuestra que el modelo aprende patrones útiles de las variables explicativas.\n🔹 El tramo más curvado hacia arriba en la gráfica indica que el modelo identifica correctamente una proporción considerable de zonas con deslizamiento, manteniendo una tasa razonablemente baja de falsos positivos.\n\n\nCode\n# Coeficientes del modelo\ncoef = pd.DataFrame({\n    'Variable': features,\n    'Coeficiente': pipe.named_steps['logreg'].coef_[0]\n})\ncoef.sort_values(by='Coeficiente', ascending=False)\n\n\n\n\n\n\n\n\n\nVariable\nCoeficiente\n\n\n\n\n4\nCLASS\n0.057308\n\n\n2\nmincurv1\n0.019340\n\n\n1\nasp1\n0.004270\n\n\n3\nprecobs1\n-0.443803\n\n\n0\nslp1\n-0.969595"
+  },
+  {
+    "objectID": "Ex1.data/landuse_imb.html",
+    "href": "Ex1.data/landuse_imb.html",
+    "title": "Machine Learning",
+    "section": "",
+    "text": "&lt;!DOCTYPE qgis PUBLIC ‘http://mrcc.com/qgis.dtd’ ‘SYSTEM’&gt;     \n\n\n         0 0     false"
+  },
+  {
+    "objectID": "Ex1.data/desliz_db.html",
+    "href": "Ex1.data/desliz_db.html",
+    "title": "Machine Learning",
+    "section": "",
+    "text": "&lt;!DOCTYPE qgis PUBLIC ‘http://mrcc.com/qgis.dtd’ ‘SYSTEM’&gt;     \n\n\n         0 0     false"
+  },
+  {
+    "objectID": "Ex1.data/imb.html",
+    "href": "Ex1.data/imb.html",
+    "title": "Machine Learning",
+    "section": "",
+    "text": "&lt;!DOCTYPE qgis PUBLIC ‘http://mrcc.com/qgis.dtd’ ‘SYSTEM’&gt;     \n\n\n         0 0     false"
+  },
+  {
+    "objectID": "Ex1.data/soil_imb.html",
+    "href": "Ex1.data/soil_imb.html",
+    "title": "Machine Learning",
+    "section": "",
+    "text": "&lt;!DOCTYPE qgis PUBLIC ‘http://mrcc.com/qgis.dtd’ ‘SYSTEM’&gt;     \n\n\n         0 0     false"
+  }
+]
